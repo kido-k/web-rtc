@@ -1,3 +1,16 @@
+require('dotenv').config()
+
+const {
+  API_KEY,
+  AUTH_DOMAIN,
+  DATABASE_URL,
+  PROJECT_ID,
+  STORAGE_BUCKET,
+  MESSAGING_SEND_ID,
+  APP_ID,
+  MEASUREMENT_ID,
+} = process.env
+
 export default {
   // Target: https://go.nuxtjs.dev/config-target
   target: 'static',
@@ -21,7 +34,7 @@ export default {
   css: [],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: [],
+  plugins: ['@/plugins/firebase'],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
@@ -52,4 +65,14 @@ export default {
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {},
+  env: {
+    API_KEY,
+    AUTH_DOMAIN,
+    DATABASE_URL,
+    PROJECT_ID,
+    STORAGE_BUCKET,
+    MESSAGING_SEND_ID,
+    APP_ID,
+    MEASUREMENT_ID,
+  },
 }

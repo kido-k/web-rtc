@@ -28,6 +28,7 @@
       </v-layout>
     </div>
     <canvas id="capture-image"></canvas>
+    <div><img id="image" /></div>
   </section>
 </template>
 
@@ -39,6 +40,7 @@ export default {
       deviceId: null,
       deviceList: [],
       stream: null,
+      caputureRef: null,
     }
   },
   computed: {
@@ -52,7 +54,7 @@ export default {
     },
   },
   mounted() {
-    this.stopStream()
+    this.captureRef = this.$firebase.database().ref('caputure')
   },
   destroyed() {
     this.stopStream()
@@ -117,13 +119,22 @@ export default {
       }
     },
     copyFrame() {
-      const canvasCaptureImage = document.getElementById('capture-image')
-      const cci = canvasCaptureImage.getContext('2d')
-      const va = document.getElementById('video')
+      const captureImage = document.getElementById('capture-image')
+      const canvas = captureImage.getContext('2d')
+      const video = document.getElementById('video')
 
-      canvasCaptureImage.width = va.videoWidth
-      canvasCaptureImage.height = va.videoHeight
-      cci.drawImage(va, 0, 0)
+      captureImage.width = video.videoWidth
+      captureImage.height = video.videoHeight
+      canvas.drawImage(video, 0, 0)
+      captureImage.toBlob(
+        (blob) => {
+          const storageRef = this.$firebaseStorage.ref()
+          const imageRef = storageRef.child('images/rtc.jpeg')
+          imageRef.put(blob).then((snapshot) => {})
+        },
+        'image/jpeg',
+        1
+      )
     },
     stopStream(status = null) {
       if (status) {
