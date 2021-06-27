@@ -13,7 +13,7 @@
           color="alert"
           @click="startRTC"
         >
-          camera
+          start
         </v-btn>
         <v-select
           v-if="deviceList.length > 0"
@@ -27,6 +27,7 @@
       </v-layout>
     </div>
     <canvas id="capture-image"></canvas>
+    <img id="result-image" />
   </section>
 </template>
 
@@ -40,7 +41,8 @@ export default {
       stream: null,
       caputureRef: null,
       interval: null,
-      intervalTime: 10000,
+      intervalTime: 30000,
+      fingerprint: null,
     }
   },
   computed: {
@@ -68,7 +70,9 @@ export default {
       await this.permission()
       await this.getMediaDevice()
       await this.setCameraDevice()
-      this.interval = setInterval(this.caputureFrame, 1000)
+      this.interval = setInterval(() => {
+        this.startDencityChecker()
+      }, this.intervalTime)
     },
     getMediaDevice() {
       return new Promise((resolve, reject) => {
@@ -122,6 +126,11 @@ export default {
         this.handleError(error)
       }
     },
+    startDencityChecker() {
+      console.log('startDencityChecker')
+      this.caputureFrame()
+      this.predict()
+    },
     caputureFrame() {
       const captureImage = document.getElementById('capture-image')
       const canvas = captureImage.getContext('2d')
@@ -140,6 +149,42 @@ export default {
         'image/jpeg',
         1
       )
+    },
+    async predict() {
+      const getImageUrl = 'http://localhost:5000/predict'
+      await this.$postApi(
+        getImageUrl,
+        (_) => {
+          this.downloadResultImage()
+        },
+        (error) => {
+          this.downloadResultImage()
+          throw error
+        },
+        {
+          fingerprint: localStorage.getItem('fingerprint'),
+        }
+      )
+    },
+    downloadResultImage() {
+      console.log('downloadResultImage')
+      const storageRef = this.$firebaseStorage.ref()
+      const fingerprint = localStorage.getItem('fingerprint')
+      storageRef
+        .child(`result/images/${fingerprint}.jpeg`)
+        .getDownloadURL()
+        .then((url) => {
+          const xhr = new XMLHttpRequest()
+          xhr.responseType = 'blob'
+          xhr.open('GET', url)
+          xhr.send()
+
+          const img = document.getElementById('result-image')
+          img.src = url
+        })
+        .catch((error) => {
+          throw error
+        })
     },
     stopStream(status = null) {
       if (status) {
@@ -173,7 +218,7 @@ export default {
 }
 #video {
   max-height: 80%;
-  max-width: 80%;
+  max-width: 800px;
 }
 .controller {
   height: 100px;
