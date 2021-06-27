@@ -24,11 +24,9 @@
           :item-value="'deviceId'"
           :label="'select camera device'"
         />
-        <v-btn @click="copyFrame">capture</v-btn>
       </v-layout>
     </div>
     <canvas id="capture-image"></canvas>
-    <div><img id="image" /></div>
   </section>
 </template>
 
@@ -41,6 +39,8 @@ export default {
       deviceList: [],
       stream: null,
       caputureRef: null,
+      interval: null,
+      intervalTime: 10000,
     }
   },
   computed: {
@@ -55,6 +55,9 @@ export default {
   },
   mounted() {
     this.captureRef = this.$firebase.database().ref('caputure')
+    if (!localStorage.getItem('fingerprint')) {
+      this.$store.commit('fingerprint/createFingerprint')
+    }
   },
   destroyed() {
     this.stopStream()
@@ -65,6 +68,7 @@ export default {
       await this.permission()
       await this.getMediaDevice()
       await this.setCameraDevice()
+      this.interval = setInterval(this.caputureFrame, 1000)
     },
     getMediaDevice() {
       return new Promise((resolve, reject) => {
@@ -118,7 +122,7 @@ export default {
         this.handleError(error)
       }
     },
-    copyFrame() {
+    caputureFrame() {
       const captureImage = document.getElementById('capture-image')
       const canvas = captureImage.getContext('2d')
       const video = document.getElementById('video')
@@ -126,10 +130,11 @@ export default {
       captureImage.width = video.videoWidth
       captureImage.height = video.videoHeight
       canvas.drawImage(video, 0, 0)
+      const fingerprint = localStorage.getItem('fingerprint')
       captureImage.toBlob(
         (blob) => {
           const storageRef = this.$firebaseStorage.ref()
-          const imageRef = storageRef.child('images/rtc.jpeg')
+          const imageRef = storageRef.child(`images/${fingerprint}.jpeg`)
           imageRef.put(blob).then((snapshot) => {})
         },
         'image/jpeg',
@@ -143,6 +148,9 @@ export default {
       if (this.stream) {
         this.stream.getTracks().forEach((track) => track.stop())
         this.stream = null
+      }
+      if (this.interval) {
+        clearInterval(this.interval)
       }
     },
     handleSuccess() {
@@ -175,5 +183,8 @@ export default {
     margin: 0 0 0 30px;
     max-width: 230px;
   }
+}
+#capture-image {
+  display: none;
 }
 </style>
