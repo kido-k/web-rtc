@@ -1,18 +1,27 @@
 <template>
   <section>
-    <div class="screen">
+    <div class="wrap">
       <h1 class="mb-6">dencity check</h1>
-      <video id="video" autoplay playsinline :poster="posterImage"></video>
+      <v-layout justify-center align-center>
+        <div class="video-screen">
+          <video id="video" autoplay playsinline :poster="posterImage" />
+        </div>
+        <div class="result-view">
+          <div class="result-view__image">
+            <v-img :src="resultImage" />
+          </div>
+          <div class="result-view__text">
+            <p v-for="(key, index) in Object.keys(resultPredict)" :key="index">
+              {{ key }}:{{ resultPredict[key] }}
+            </p>
+          </div>
+        </div>
+      </v-layout>
       <v-layout justify-center align-center class="controller">
         <v-btn v-if="status === 'start'" @click="stopStream('stop')">
           stop
         </v-btn>
-        <v-btn
-          v-else
-          class="controller__camera"
-          color="alert"
-          @click="startRTC"
-        >
+        <v-btn v-else class="controller__camera" @click="startRTC">
           start
         </v-btn>
         <v-select
@@ -24,30 +33,37 @@
           :item-value="'deviceId'"
           :label="'select camera device'"
         />
+        <v-btn @click="startDencityChecker">check</v-btn>
       </v-layout>
     </div>
     <canvas id="capture-image"></canvas>
-    <img id="result-image" />
   </section>
 </template>
 
 <script>
 export default {
+  middleware: ['init'],
   data() {
     return {
       status: null,
       deviceId: null,
       deviceList: [],
       stream: null,
-      caputureRef: null,
       interval: null,
-      intervalTime: 30000,
-      fingerprint: null,
+      intervalTime: 10000,
+      delayTime: 3000,
+      timestamp: '',
+      resultRef: null,
+      resultImage: '',
+      resultPredict: {},
     }
   },
   computed: {
     posterImage() {
       return require('@/assets/image/poster_image.png')
+    },
+    userId() {
+      return this.$store.state.auth.id
     },
   },
   watch: {
@@ -56,9 +72,13 @@ export default {
     },
   },
   mounted() {
-    this.captureRef = this.$firebase.database().ref('caputure')
-    if (!localStorage.getItem('fingerprint')) {
-      this.$store.commit('fingerprint/createFingerprint')
+    const timestamp = localStorage.getItem('timestamp')
+    if (timestamp) {
+      this.resultRef = this.$firebase
+        .database()
+        .ref(`results/${this.userId}/${timestamp}`)
+      this.setResult()
+      this.downloadResultImage()
     }
   },
   destroyed() {
@@ -85,6 +105,9 @@ export default {
                 this.deviceList.push(device)
               }
             })
+            if (this.deviceList.length > 0) {
+              this.deviceId = this.deviceList[0].deviceId
+            }
             resolve()
           })
           .catch((error) => {
@@ -127,9 +150,15 @@ export default {
       }
     },
     startDencityChecker() {
-      console.log('startDencityChecker')
+      this.timestamp = String(new Date().getTime())
+      localStorage.setItem('timestamp', this.timestamp)
+      this.resultRef = this.$firebase
+        .database()
+        .ref(`results/${this.userId}/${this.timestamp}`)
       this.caputureFrame()
-      this.predict()
+      setTimeout(() => {
+        this.predict()
+      }, this.delayTime)
     },
     caputureFrame() {
       const captureImage = document.getElementById('capture-image')
@@ -139,11 +168,12 @@ export default {
       captureImage.width = video.videoWidth
       captureImage.height = video.videoHeight
       canvas.drawImage(video, 0, 0)
-      const fingerprint = localStorage.getItem('fingerprint')
       captureImage.toBlob(
         (blob) => {
           const storageRef = this.$firebaseStorage.ref()
-          const imageRef = storageRef.child(`images/${fingerprint}.jpeg`)
+          const imageRef = storageRef.child(
+            `images/${this.userId}/${this.timestamp}.jpeg`
+          )
           imageRef.put(blob).then((snapshot) => {})
         },
         'image/jpeg',
@@ -156,34 +186,32 @@ export default {
         getImageUrl,
         (_) => {
           this.downloadResultImage()
+          this.setResult()
         },
         (error) => {
           this.downloadResultImage()
           throw error
         },
         {
-          fingerprint: localStorage.getItem('fingerprint'),
+          userId: this.userId,
+          timestamp: this.timestamp,
         }
       )
     },
     downloadResultImage() {
-      console.log('downloadResultImage')
       const storageRef = this.$firebaseStorage.ref()
-      const fingerprint = localStorage.getItem('fingerprint')
       storageRef
-        .child(`result/images/${fingerprint}.jpeg`)
+        .child(`result/images/${this.userId}/${this.timestamp}.jpeg`)
         .getDownloadURL()
         .then((url) => {
           const xhr = new XMLHttpRequest()
           xhr.responseType = 'blob'
           xhr.open('GET', url)
           xhr.send()
-
-          const img = document.getElementById('result-image')
-          img.src = url
+          this.resultImage = url
         })
         .catch((error) => {
-          throw error
+          console.log(error.code)
         })
     },
     stopStream(status = null) {
@@ -198,6 +226,12 @@ export default {
         clearInterval(this.interval)
       }
     },
+    setResult() {
+      this.resultRef.on('value', (snapshot) => {
+        if (!snapshot || !snapshot.val()) return
+        this.resultPredict = snapshot.val()
+      })
+    },
     handleSuccess() {
       const video = document.querySelector('video')
       video.srcObject = this.stream
@@ -210,16 +244,30 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.screen {
+.wrap {
   width: 100%;
   min-height: 80%;
-  padding: 20px;
+  padding: 20px 100px;
   text-align: center;
 }
-#video {
-  max-height: 80%;
-  max-width: 800px;
+.video-screen {
+  border: thin solid #000;
+  height: 480px;
 }
+.result-view {
+  &__image {
+    width: 300px;
+    height: 240px;
+    border: thin solid #000;
+  }
+  &__text {
+    width: 300px;
+    height: 240px;
+    border: thin solid #000;
+    overflow: auto;
+  }
+}
+
 .controller {
   height: 100px;
   padding: 16px;
@@ -228,6 +276,10 @@ export default {
     margin: 0 0 0 30px;
     max-width: 230px;
   }
+}
+#video {
+  height: 100%;
+  max-width: 100%;
 }
 #capture-image {
   display: none;

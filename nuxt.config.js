@@ -12,13 +12,14 @@ const {
 } = process.env
 
 export default {
+  mode: 'spa',
   // Target: https://go.nuxtjs.dev/config-target
   target: 'static',
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    titleTemplate: '%s - webrtc',
-    title: 'webrtc',
+    titleTemplate: '%s - live vision',
+    title: 'live vision',
     htmlAttrs: {
       lang: 'en',
     },
