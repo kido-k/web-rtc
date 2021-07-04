@@ -181,7 +181,8 @@ export default {
       )
     },
     async predict() {
-      const getImageUrl = 'http://localhost:5000/predict'
+      // const getImageUrl = 'http://localhost:5000/predict'
+      const getImageUrl = 'https://yolo.live-vision.work:5000/predict'
       await this.$postApi(
         getImageUrl,
         (_) => {
