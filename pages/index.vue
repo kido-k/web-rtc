@@ -50,7 +50,7 @@ export default {
       deviceList: [],
       stream: null,
       interval: null,
-      intervalTime: 10000,
+      intervalTime: 20000,
       delayTime: 3000,
       timestamp: '',
       resultRef: null,
