@@ -33,7 +33,7 @@
           :item-value="'deviceId'"
           :label="'select camera device'"
         />
-        <v-btn @click="startDencityChecker">check</v-btn>
+        <v-btn @click="startDencityChecker">analyze</v-btn>
       </v-layout>
     </div>
     <canvas id="capture-image"></canvas>
@@ -90,9 +90,9 @@ export default {
       await this.permission()
       await this.getMediaDevice()
       await this.setCameraDevice()
-      this.interval = setInterval(() => {
-        this.startDencityChecker()
-      }, this.intervalTime)
+      // this.interval = setInterval(() => {
+      //   this.startDencityChecker()
+      // }, this.intervalTime)
     },
     getMediaDevice() {
       return new Promise((resolve, reject) => {
