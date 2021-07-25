@@ -19,7 +19,7 @@
         </v-tab>
         <v-tab>
           <v-icon left> mdi-movie </v-icon>
-          iframe
+          Movie
         </v-tab>
         <v-tab>
           <v-icon left> mdi-table </v-icon>
@@ -33,7 +33,7 @@
         </v-tab-item>
         <v-tab-item>
           <v-card flat>
-            <v-card-text> iframe </v-card-text>
+            <movie-layout />
           </v-card>
         </v-tab-item>
         <v-tab-item>
@@ -48,10 +48,14 @@
 
 <script>
 import CameraLayout from '~/components/camera/CameraLayout.vue'
+// import IframeLayout from '~/components/iframe/IframeLayout.vue'
+import MovieLayout from '~/components/movie/MovieLayout.vue'
 
 export default {
   components: {
     CameraLayout,
+    // IframeLayout,
+    MovieLayout,
   },
   middleware: ['init'],
 }

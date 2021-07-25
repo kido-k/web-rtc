@@ -1,33 +1,20 @@
 <template>
-  <section class="camera__wrap">
+  <section class="iframe__wrap">
     <v-layout justify-center align-center class="controller">
-      <v-btn v-if="status === 'start'" fab icon @click="stopStream('stop')">
-        <v-icon dark size="42" color="red">mdi-stop-circle</v-icon>
-      </v-btn>
-      <v-btn v-else fab icon @click="startRTC">
-        <v-icon dark size="50" color="indigo">mdi-record-rec</v-icon>
-      </v-btn>
-      <v-select
-        v-if="deviceList.length > 0"
-        v-model="deviceId"
-        class="controller__device-selector"
-        :items="deviceList"
-        :item-text="'label'"
-        :item-value="'deviceId'"
-        :label="'select camera device'"
+      <v-text-field
+        v-model="url"
+        class="controller__url"
         hide-details
+        label="iframe url"
+        placeholder="ex: https://www.youtube.com/watch?v=XXXXXXXX"
       />
-      <v-btn
-        :disabled="!deviceId"
-        class="controller__analyze"
-        @click="startAnalyze"
-      >
+      <v-btn :disabled="!url" class="controller__analyze" @click="startAnalyze">
         analyze
       </v-btn>
     </v-layout>
-    <v-layout justify-center align-center>
+    <v-layout v-if="!!url" justify-center align-center>
       <div class="video-screen">
-        <video id="video" autoplay playsinline :poster="posterImage" />
+        <iframe id="iframe-link" :src="url"></iframe>
       </div>
       <div class="result-view">
         <div class="result-view__image">
@@ -49,9 +36,8 @@ export default {
   props: {},
   data() {
     return {
-      status: null,
-      deviceId: null,
-      deviceList: [],
+      url: null,
+      iframeId: null,
       stream: null,
       interval: null,
       intervalTime: 20000,
@@ -70,73 +56,15 @@ export default {
       return this.$store.state.auth.id
     },
   },
-  watch: {
-    async deviceId() {
-      await this.setCameraDevice()
-    },
+  mounted() {
+    if (!localStorage.getItem('iframeId')) {
+      this.iframeId = this.getUniqueId()
+      console.log('mounted')
+      console.log(this.iframeId)
+      localStorage.setItem('iframeId', this.iframeId)
+    }
   },
   methods: {
-    async startRTC() {
-      this.status = 'start'
-      await this.permission()
-      await this.getMediaDevice()
-      await this.setCameraDevice()
-    },
-    getMediaDevice() {
-      return new Promise((resolve, reject) => {
-        navigator.mediaDevices
-          .enumerateDevices()
-          .then((devices) => {
-            devices.forEach((device) => {
-              // 今回はオーディオは使わないのでvideのみ追加
-              if (device.kind === 'videoinput') {
-                this.deviceList.push(device)
-              }
-            })
-            if (this.deviceList.length > 0) {
-              this.deviceId = this.deviceList[0].deviceId
-            }
-            resolve()
-          })
-          .catch((error) => {
-            reject(error)
-            this.handleError(error)
-          })
-      })
-    },
-    async permission() {
-      await navigator.mediaDevices
-        .getUserMedia({
-          video: { facingMode: 'environment', width: 500, height: 500 },
-          audio: false,
-        })
-        .then(this.handleSuccess)
-        .catch((error) => {
-          this.handleError(error)
-        })
-    },
-    async setCameraDevice() {
-      this.stopStream()
-      let constraints = null
-      if (this.deviceId) {
-        constraints = {
-          video: {
-            deviceId: this.deviceId,
-          },
-        }
-      } else {
-        constraints = {
-          audio: false,
-          video: true,
-        }
-      }
-      try {
-        this.stream = await navigator.mediaDevices.getUserMedia(constraints)
-        this.handleSuccess()
-      } catch (error) {
-        this.handleError(error)
-      }
-    },
     startAnalyze() {
       this.timestamp = String(new Date().getTime())
       localStorage.setItem('timestamp', this.timestamp)
@@ -151,7 +79,7 @@ export default {
     caputureFrame() {
       const captureImage = document.getElementById('capture-image')
       const canvas = captureImage.getContext('2d')
-      const video = document.getElementById('video')
+      const video = document.getElementById('iframe-link')
 
       captureImage.width = video.videoWidth
       captureImage.height = video.videoHeight
@@ -169,8 +97,8 @@ export default {
       )
     },
     async predict() {
-      const getImageUrl = 'http://localhost:5000/predict'
-      // const getImageUrl = 'https://yolo.live-vision.work:5000/predict'
+      // const getImageUrl = 'http://localhost:5000/predict'
+      const getImageUrl = 'https://yolo.live-vision.work:5000/predict'
       await this.$postApi(
         getImageUrl,
         (_) => {
@@ -182,7 +110,6 @@ export default {
           throw error
         },
         {
-          fileType: 'image',
           userId: this.userId,
           deviceId: this.deviceId,
           timestamp: this.timestamp,
@@ -207,44 +134,50 @@ export default {
           throw error
         })
     },
-    stopStream(status = null) {
-      if (status) {
-        this.status = status
-      }
-      if (this.stream) {
-        this.stream.getTracks().forEach((track) => track.stop())
-        this.stream = null
-      }
-      if (this.interval) {
-        clearInterval(this.interval)
-      }
-    },
     setResult() {
       this.resultRef.on('value', (snapshot) => {
         if (!snapshot || !snapshot.val()) return
         this.resultPredict = snapshot.val()
       })
     },
-    handleSuccess() {
-      const video = document.querySelector('video')
-      video.srcObject = this.stream
-    },
-    handleError(error) {
-      throw error
+    getUniqueId(number) {
+      const characters =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+      let _number = 16
+      if (number) _number = number
+      return Array.from(Array(_number))
+        .map(() => characters[Math.floor(Math.random() * characters.length)])
+        .join('')
     },
   },
 }
 </script>
 
 <style lang="scss" scoped>
-.camera__wrap {
+.iframe__wrap {
   padding: 20px;
+}
+
+.controller {
+  height: 100px;
+  padding: 16px;
+  text-align: center;
+  &__url {
+    margin: 0 0 0 30px;
+    max-width: 500px;
+  }
+  &__analyze {
+    position: absolute;
+    right: 20px;
+  }
 }
 
 .video-screen {
   border: thin solid #000;
   height: 480px;
+  min-width: 60%;
 }
+
 .result-view {
   &__image {
     width: 300px;
@@ -259,21 +192,9 @@ export default {
   }
 }
 
-.controller {
-  height: 100px;
-  padding: 16px;
-  text-align: center;
-  &__device-selector {
-    margin: 0 0 0 30px;
-    max-width: 230px;
-  }
-  &__analyze {
-    position: absolute;
-    right: 20px;
-  }
-}
-#video {
+#iframe-link {
   height: 100%;
+  width: 100%;
   max-width: 100%;
 }
 #capture-image {
