@@ -293,7 +293,7 @@ export default {
 <style lang="scss" scoped>
 .camera {
   &__wrap {
-    padding: 20px;
+    padding: 0 20px 20px 20px;
   }
   &__layout {
     border: thin solid #c3c3c3;

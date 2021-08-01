@@ -1,7 +1,7 @@
 <template>
   <section class="page__wrap">
     <v-card class="page__card-layout">
-      <v-toolbar flat color="indigo" dark>
+      <v-toolbar flat color="indigo" dark style="text-align: center">
         <v-toolbar-title>
           <h1>AI vision</h1>
         </v-toolbar-title>
@@ -79,6 +79,10 @@ export default {
 
 .v-tabs-bar.v-item-group {
   height: 100%;
+}
+
+::v-deep .v-toolbar__content {
+  justify-content: center;
 }
 
 ::v-deep .v-slide-group__wrapper {
