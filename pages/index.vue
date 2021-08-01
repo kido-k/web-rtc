@@ -7,6 +7,7 @@
         </v-toolbar-title>
       </v-toolbar>
       <v-tabs
+        v-model="currentTab"
         vertical
         class="page__tabs"
         background-color="indigo"
@@ -38,7 +39,7 @@
         </v-tab-item>
         <v-tab-item>
           <v-card flat>
-            <v-card-text> results </v-card-text>
+            <results-layout />
           </v-card>
         </v-tab-item>
       </v-tabs>
@@ -50,14 +51,31 @@
 import CameraLayout from '~/components/camera/CameraLayout.vue'
 // import IframeLayout from '~/components/iframe/IframeLayout.vue'
 import MovieLayout from '~/components/movie/MovieLayout.vue'
+import ResultsLayout from '~/components/results/ResultsLayout.vue'
 
 export default {
   components: {
     CameraLayout,
     // IframeLayout,
     MovieLayout,
+    ResultsLayout,
   },
   middleware: ['init'],
+  data() {
+    return {
+      currentTab: 0,
+    }
+  },
+  watch: {
+    currentTab() {
+      localStorage.setItem('currentTab', this.currentTab)
+    },
+  },
+  mounted() {
+    if (localStorage.getItem('currentTab')) {
+      this.currentTab = Number(localStorage.getItem('currentTab'))
+    }
+  },
 }
 </script>
 
