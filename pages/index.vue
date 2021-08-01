@@ -13,15 +13,15 @@
         color="white"
         slider-size="5"
       >
-        <v-tab>
+        <v-tab class="justify-start">
           <v-icon left> mdi-camera </v-icon>
           Camera
         </v-tab>
-        <v-tab>
+        <v-tab class="justify-start">
           <v-icon left> mdi-movie </v-icon>
           Movie
         </v-tab>
-        <v-tab>
+        <v-tab class="justify-start">
           <v-icon left> mdi-table </v-icon>
           Result
         </v-tab>

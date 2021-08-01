@@ -22,6 +22,11 @@
         <source :src="movieUrl" />
       </video>
     </div>
+    <div v-if="resultMovieUrl">
+      <video controls class="video-screen">
+        <source :src="resultMovieUrl" />
+      </video>
+    </div>
   </section>
 </template>
 
@@ -30,11 +35,13 @@ export default {
   props: {},
   data() {
     return {
+      loading: false,
       movieFile: null,
       movieUrl: null,
       movieId: null,
       delayTime: 3000,
       timestamp: '',
+      resultMovieUrl: null,
     }
   },
   computed: {
@@ -42,20 +49,17 @@ export default {
       return this.$store.state.auth.id
     },
   },
-  mounted() {
-    if (!localStorage.getItem('movieId')) {
-      this.movieId = this.getUniqueId()
-      localStorage.setItem('movieId', this.movieId)
-    } else {
-      this.movieId = localStorage.getItem('movieId')
-    }
-  },
+  mounted() {},
   methods: {
     pickupMovie(file) {
+      this.resultMovieUrl = null
       if (file !== undefined && file !== null) {
         this.movieFile = file
         if (file.name.lastIndexOf('.') <= 0) {
           return
+        } else {
+          this.movieId = file.name.split('.')[0]
+          this.downloadResultMovie()
         }
         const fileReader = new FileReader()
         fileReader.readAsDataURL(file)
@@ -63,7 +67,8 @@ export default {
           this.movieUrl = fileReader.result
         })
       } else {
-        this.movieUrl = ''
+        this.movieUrl = null
+        this.resultMovieUrl = null
       }
     },
     startAnalyze() {
@@ -79,12 +84,15 @@ export default {
     async predict() {
       const getImageUrl = 'http://localhost:5000/predict'
       // const getImageUrl = 'https://yolo.live-vision.work:5000/predict'
+      this.loading = true
       await this.$postApi(
         getImageUrl,
         (_) => {
           this.downloadResultMovie()
+          this.loading = false
         },
         (error) => {
+          this.loading = false
           throw error
         },
         {
@@ -101,11 +109,7 @@ export default {
         .child(`result/movie/${this.userId}/${this.movieId}_m2det.mp4`)
         .getDownloadURL()
         .then((url) => {
-          const xhr = new XMLHttpRequest()
-          xhr.responseType = 'blob'
-          xhr.open('GET', url)
-          xhr.send()
-          this.resultImage = url
+          this.resultMovieUrl = url
         })
         .catch((error) => {
           throw error
@@ -145,6 +149,7 @@ export default {
 }
 
 .video-screen {
+  max-width: 800px;
   width: 100%;
 }
 </style>
