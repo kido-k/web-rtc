@@ -1,6 +1,6 @@
 <template>
   <section class="camera__wrap">
-    <v-layout justify-center align-center class="controller">
+    <v-layout justify-center align-center class="camera__controller">
       <v-btn v-if="status === 'start'" fab icon @click="stopStream('stop')">
         <v-icon dark size="42" color="red">mdi-stop-circle</v-icon>
       </v-btn>
@@ -10,7 +10,7 @@
       <v-select
         v-if="deviceList.length > 0"
         v-model="deviceId"
-        class="controller__device-selector"
+        class="camera__controller__device-selector"
         :items="deviceList"
         :item-text="'label'"
         :item-value="'deviceId'"
@@ -19,13 +19,14 @@
       />
       <v-btn
         :disabled="!deviceId"
-        class="controller__analyze"
+        :loading="loading"
+        class="camera__controller__analyze"
         @click="startAnalyze"
       >
         analyze
       </v-btn>
     </v-layout>
-    <v-layout justify-center align-center>
+    <v-layout justify-center align-center class="camera__layout">
       <div class="video-screen">
         <video id="video" autoplay playsinline :poster="posterImage" />
       </div>
@@ -33,10 +34,15 @@
         <div class="result-view__image">
           <v-img :src="resultImage" />
         </div>
-        <div class="result-view__text">
-          <p v-for="(key, index) in Object.keys(resultPredict)" :key="index">
-            {{ key }}:{{ resultPredict[key] }}
-          </p>
+        <div class="result-view__chart">
+          <chart
+            v-if="Object.keys(resultPredict).length > 0"
+            :labels="chartLabels"
+            :data="chartData"
+            :options="chartOptions"
+            :colors="chartColors"
+            :styles="{ height: '280px', width: '380px' }"
+          />
         </div>
       </div>
     </v-layout>
@@ -45,10 +51,17 @@
 </template>
 
 <script>
+import Chart from '@/components/common/Chart.vue'
+import color from '@/assets/const/color.js'
+
 export default {
+  components: {
+    Chart,
+  },
   props: {},
   data() {
     return {
+      loading: false,
       status: null,
       deviceId: null,
       deviceList: [],
@@ -60,6 +73,30 @@ export default {
       resultRef: null,
       resultImage: '',
       resultPredict: {},
+      chartData: [],
+      chartLabels: [],
+      chartColors: [],
+      chartBaseColor: color.chartBaseColor,
+      chartOptions: {
+        maintainAspectRatio: false,
+        animation: {
+          duration: 1500,
+          easing: 'easeInOutCubic',
+        },
+        legend: {
+          display: false,
+        },
+        scales: {
+          yAxes: [
+            {
+              ticks: {
+                min: 0,
+                stepSize: 1,
+              },
+            },
+          ],
+        },
+      },
     }
   },
   computed: {
@@ -144,6 +181,9 @@ export default {
       }
     },
     startAnalyze() {
+      this.loading = true
+      this.resultImage = ''
+      this.resultPredict = {}
       this.timestamp = String(new Date().getTime())
       localStorage.setItem('timestamp', this.timestamp)
       this.resultRef = this.$firebase
@@ -180,9 +220,10 @@ export default {
         (_) => {
           this.downloadResultImage()
           this.setResult()
+          this.loading = false
         },
         (error) => {
-          this.downloadResultImage()
+          this.loading = false
           throw error
         },
         {
@@ -227,7 +268,16 @@ export default {
       this.resultRef.on('value', (snapshot) => {
         if (!snapshot || !snapshot.val()) return
         this.resultPredict = snapshot.val()
+        this.setChartData()
       })
+    },
+    setChartData() {
+      this.chartLabels = Object.keys(this.resultPredict) || []
+      this.chartData = []
+      Object.keys(this.resultPredict).forEach((key) => {
+        this.chartData.push(this.resultPredict[key])
+      })
+      this.chartColors = this.chartBaseColor.slice(0, this.chartLabels.length)
     },
     handleSuccess() {
       const video = document.querySelector('video')
@@ -241,41 +291,50 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.camera__wrap {
-  padding: 20px;
+.camera {
+  &__wrap {
+    padding: 20px;
+  }
+  &__layout {
+    border: thin solid #c3c3c3;
+  }
+  &__controller {
+    height: 100px;
+    padding: 16px;
+    text-align: center;
+    &__device-selector {
+      margin: 0 0 0 30px;
+      max-width: 230px;
+    }
+    &__analyze {
+      position: absolute;
+      right: 20px;
+    }
+  }
 }
 
 .video-screen {
-  border: thin solid #000;
-  height: 480px;
+  border-right: thin solid #c3c3c3;
+  height: 600px;
 }
 .result-view {
   &__image {
-    width: 300px;
-    height: 240px;
-    border: thin solid #000;
+    border-bottom: thin solid #c3c3c3;
+    display: flex;
+    align-items: center;
+    width: 400px;
+    height: 300px;
   }
-  &__text {
-    width: 300px;
-    height: 240px;
-    border: thin solid #000;
+  &__chart {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 400px;
+    height: 300px;
     overflow: auto;
   }
 }
 
-.controller {
-  height: 100px;
-  padding: 16px;
-  text-align: center;
-  &__device-selector {
-    margin: 0 0 0 30px;
-    max-width: 230px;
-  }
-  &__analyze {
-    position: absolute;
-    right: 20px;
-  }
-}
 #video {
   height: 100%;
   max-width: 100%;

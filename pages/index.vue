@@ -70,6 +70,7 @@ export default {
   }
   &__card-layout {
     height: 100%;
+    border-radius: 0;
   }
   &__tabs {
     height: 100%;
@@ -78,5 +79,9 @@ export default {
 
 .v-tabs-bar.v-item-group {
   height: 100%;
+}
+
+::v-deep .v-slide-group__wrapper {
+  padding: 10px 0 0 0;
 }
 </style>
