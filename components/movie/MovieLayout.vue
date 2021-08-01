@@ -48,6 +48,12 @@ export default {
     userId() {
       return this.$store.state.auth.id
     },
+    predictApiUrl() {
+      if (process.env.MODE === 'dev') {
+        return 'https://yolo.live-vision.work:5000/predict'
+      }
+      return 'http://localhost:5000/predict'
+    },
   },
   mounted() {},
   methods: {
@@ -82,11 +88,9 @@ export default {
       })
     },
     async predict() {
-      const getImageUrl = 'http://localhost:5000/predict'
-      // const getImageUrl = 'https://yolo.live-vision.work:5000/predict'
       this.loading = true
       await this.$postApi(
-        getImageUrl,
+        this.predictApiUrl,
         (_) => {
           this.downloadResultMovie()
           this.loading = false

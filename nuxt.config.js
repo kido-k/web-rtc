@@ -1,15 +1,5 @@
-require('dotenv').config()
-
-const {
-  API_KEY,
-  AUTH_DOMAIN,
-  DATABASE_URL,
-  PROJECT_ID,
-  STORAGE_BUCKET,
-  MESSAGING_SEND_ID,
-  APP_ID,
-  MEASUREMENT_ID,
-} = process.env
+const environment = process.env.NODE_ENV || 'local'
+const env = require(`./env.${environment}.js`)
 
 export default {
   mode: 'spa',
@@ -66,14 +56,5 @@ export default {
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {},
-  env: {
-    API_KEY,
-    AUTH_DOMAIN,
-    DATABASE_URL,
-    PROJECT_ID,
-    STORAGE_BUCKET,
-    MESSAGING_SEND_ID,
-    APP_ID,
-    MEASUREMENT_ID,
-  },
+  env,
 }
