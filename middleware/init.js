@@ -7,6 +7,7 @@ export default (context) => {
       } else {
         context.redirect('/login')
       }
+      context.store.commit('common/setLoading', false)
     })
   }
 }

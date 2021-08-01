@@ -1,6 +1,6 @@
 <template>
   <section class="page__wrap">
-    <v-card class="page__card-layout">
+    <v-card v-if="!loading" class="page__card-layout">
       <v-toolbar flat color="indigo" dark style="text-align: center">
         <v-toolbar-title>
           <h1>AI vision</h1>
@@ -65,6 +65,11 @@ export default {
     return {
       currentTab: 0,
     }
+  },
+  computed: {
+    loading() {
+      return this.$store.state.common.loading
+    },
   },
   watch: {
     currentTab() {
