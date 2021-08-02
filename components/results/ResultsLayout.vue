@@ -37,16 +37,25 @@
         <source :src="resultMovie" />
       </video>
     </div>
+    <div v-if="chartData.length > 0 && !rendering" class="results__chart">
+      <chart
+        :labels="chartLabels"
+        :data="chartData"
+        :options="chartOptions"
+        :colors="chartColors"
+        :styles="{ height: '400px', width: '800px' }"
+      />
+    </div>
   </section>
 </template>
 
 <script>
-// import Chart from '@/components/common/Chart.vue'
+import Chart from '@/components/common/Chart.vue'
 import color from '@/assets/const/color.js'
 
 export default {
   components: {
-    // Chart,
+    Chart,
   },
   props: {},
   data() {
@@ -57,6 +66,7 @@ export default {
       selectedResults: null,
       resultImage: null,
       resultMovie: null,
+      rendering: false,
       chartData: [],
       chartLabels: [],
       chartColors: [],
@@ -93,8 +103,7 @@ export default {
   },
   watch: {
     selectedItemKey() {
-      this.resultImage = null
-      this.resultMovie = null
+      this.resetData()
       const result = this.results[this.selectedItemKey]
       if (Array.isArray(result)) {
         this.selectedResults = this.results[this.selectedItemKey]
@@ -114,6 +123,7 @@ export default {
           this.selectedResults.push(data)
         })
       }
+      this.setChartData()
     },
   },
   mounted() {
@@ -127,6 +137,18 @@ export default {
         this.results = snapshot.val()
         this.resultItems = Object.keys(this.results)
       })
+    },
+    resetData() {
+      console.log('resetData')
+      this.resultImage = null
+      this.resultMovie = null
+      this.chartLabels = []
+      this.chartData = []
+      this.chartColors = []
+      this.rendering = true
+      setTimeout(() => {
+        this.rendering = false
+      }, 1000)
     },
     getDate(timestamp) {
       const date = new Date(Number(timestamp))
@@ -176,6 +198,13 @@ export default {
           throw error
         })
     },
+    setChartData() {
+      this.selectedResults.forEach((result) => {
+        this.chartLabels.push(result.time)
+        this.chartData.push(result.person)
+        this.chartColors.push(this.chartBaseColor[0])
+      })
+    },
   },
 }
 </script>
@@ -196,8 +225,8 @@ export default {
     margin: 50px auto;
     display: flex;
     align-items: center;
-    width: 400px;
-    height: 300px;
+    width: 80%;
+    height: 100%;
   }
   &__movie {
     margin: 50px auto;
@@ -205,6 +234,12 @@ export default {
     align-items: center;
     width: 80%;
     height: 100%;
+  }
+  &__chart {
+    margin: 50px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 </style>

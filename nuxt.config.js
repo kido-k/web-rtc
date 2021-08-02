@@ -8,8 +8,8 @@ export default {
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    titleTemplate: '%s - live vision',
-    title: 'live vision',
+    titleTemplate: '%s - AI vision',
+    title: 'AI vision',
     htmlAttrs: {
       lang: 'en',
     },
